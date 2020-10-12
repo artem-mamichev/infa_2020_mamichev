@@ -5,7 +5,7 @@ from random import randint
 
 pygame.init()
 
-YELLOW = (255, 255,   0)
+YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -49,7 +49,7 @@ def redraw_map():
 
         # timer visualization
         end_angle = 2 * pi * ball[7] / time_to_catch
-        arc(screen, WHITE, (int(ball[0] - ball[2]), int(ball[1] - ball[2]), ball[2] * 2, ball[2] * 2), 0, end_angle, 5)
+        arc(screen, WHITE, (int(ball[0] - ball[2] - 3), int(ball[1] - ball[2] - 3), ball[2] * 2 + 6, ball[2] * 2 + 6), 0, end_angle, 5)
 
 
 def click_check(event):
@@ -133,10 +133,10 @@ def check_loose():
     global finished
     for ball in balls:
         if ball[7] < 0:
-            loose_animation()
+            loose_window()
 
 
-def loose_animation():
+def loose_window():
     font = pygame.font.Font('freesansbold.ttf', 150)
     textSurface = font.render('YOU LOOSE', True, RED, BLACK)
     textRect = textSurface.get_rect()
