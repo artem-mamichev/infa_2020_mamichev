@@ -95,7 +95,7 @@ def balls_refresh():
     removing clicked balls, adding new ones
     '''
     # spawn
-    global spawn_timer, spawn_time
+    global spawn_timer
     if spawn_timer <= 0:
         new_ball()
         spawn_timer = spawn_time
@@ -171,7 +171,7 @@ def try_again(event):
 
 
 def main():
-    global finished 
+    global finished, spawn_time
     while not finished:
         clock.tick(FPS)
         for event in pygame.event.get():
@@ -188,7 +188,7 @@ def main():
         check_loose()
         time_flow()
 
-        spawn_time = spawn_time0 * (0.7 + 0.6/(score * 0.3 + 1))
+        spawn_time = spawn_time0 * (0.4 + 0.6/(score * 0.05 + 1))
 
         pygame.display.update()
 
@@ -218,6 +218,7 @@ while finished:
             if event.button == 1:
                 if try_again(event):
                     finished = False
+                    score = 0
                     main()
                     
     
