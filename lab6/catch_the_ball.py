@@ -130,28 +130,67 @@ def check_loose():
     '''
     Checking if the player loose
     '''
-    global finished
+    global finished, balls
     for ball in balls:
         if ball[7] < 0:
             loose_window()
+            finished = True
+            balls = []
 
 
 def loose_window():
+    global textRect3
     font = pygame.font.Font('freesansbold.ttf', 150)
     textSurface = font.render('YOU LOOSE', True, RED, BLACK)
     textRect = textSurface.get_rect()
-    textRect.center = (int(screen_width / 2), int(screen_height * 0.45))
+    textRect.center = (int(screen_width / 2), int(screen_height * 0.4))
 
     font2 = pygame.font.Font('freesansbold.ttf', 100)
     textSurface2 = font2.render('Score: ' + str(score), True, GREEN, BLACK)
     textRect2 = textSurface2.get_rect()
-    textRect2.center = (int(screen_width / 2), int(screen_height * 0.65))
+    textRect2.center = (int(screen_width / 2), int(screen_height * 0.6))
+
+    font3 = pygame.font.Font('freesansbold.ttf', 60)
+    textSurface3 = font3.render('TRY AGAIN', True, YELLOW, BLACK)
+    textRect3 = textSurface3.get_rect()
+    textRect3.center = (int(screen_width / 2), int(screen_height * 0.75))
 
     screen.fill(BLACK)
     screen.blit(textSurface, textRect)
     screen.blit(textSurface2, textRect2) 
+    screen.blit(textSurface3, textRect3) 
 
     pygame.display.update()
+
+
+def try_again(event):
+    if (textRect3.left < event.pos[0] < textRect3.right) and (textRect3.top < event.pos[1] < textRect3.top + textRect3.height):
+        return True
+    else:
+        return False
+
+
+def main():
+    global finished 
+    while not finished:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click_check(event)
+
+        recalculate_score()
+        balls_refresh()
+        motion()
+        redraw_map()    
+        check_loose()
+        time_flow()
+
+        spawn_time = spawn_time0 * (0.7 + 0.6/(score * 0.3 + 1))
+
+        pygame.display.update()
 
 
 time_to_catch = 3    # seconds to click on the ball 
@@ -169,25 +208,17 @@ finished = False
 score = 0
 
 
-while not finished:
-    clock.tick(FPS)
+main()
+
+while finished:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            finished = True
+            pygame.quit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                click_check(event)
-
-    recalculate_score()
-    balls_refresh()
-    motion()
-    redraw_map()    
-    check_loose()
-    time_flow()
-
-    spawn_time = spawn_time0 * (0.8 + 0.3/(score + 1))
-
-    pygame.display.update()
+                if try_again(event):
+                    finished = False
+                    main()
+                    
     
-
 pygame.quit()
