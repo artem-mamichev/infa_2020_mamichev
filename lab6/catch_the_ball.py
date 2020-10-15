@@ -130,15 +130,18 @@ def check_loose():
     '''
     Checking if the player loose
     '''
-    global finished, balls
+    global loosed, balls
     for ball in balls:
         if ball[7] < 0:
             loose_window()
-            finished = True
+            loosed = True
             balls = []
 
 
 def loose_window():
+    '''
+    Draws "you loose" screen after you lost
+    '''
     global textRect3
     font = pygame.font.Font('freesansbold.ttf', 150)
     textSurface = font.render('YOU LOOSE', True, RED, BLACK)
@@ -164,6 +167,9 @@ def loose_window():
 
 
 def try_again(event):
+    '''
+    Restarts if "try again" button pressed
+    '''
     if (textRect3.left < event.pos[0] < textRect3.right) and (textRect3.top < event.pos[1] < textRect3.top + textRect3.height):
         return True
     else:
@@ -171,8 +177,8 @@ def try_again(event):
 
 
 def main():
-    global finished, spawn_time
-    while not finished:
+    global loosed, spawn_time
+    while not loosed:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -198,26 +204,24 @@ spawn_time0 = 1   # time before spawns in the beginning
 spawn_time = spawn_time0    # current spawn time
 spawn_timer = 0    
 delta_time = 1 / FPS    # time between two frames    
-
 balls = []    # balls[i] = [x, y, r, Vx, Vy, color, is_clicked, timer]
               #             0  1  2  3   4     5         6        7
-
 pygame.display.update()
 clock = pygame.time.Clock()
-finished = False
+loosed = False
 score = 0
 
 
 main()
 
-while finished:
+while loosed:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if try_again(event):
-                    finished = False
+                    loosed = False
                     score = 0
                     main()
                     
