@@ -22,23 +22,68 @@ screen_height = 900
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 
+class Brick:
+    def __init__(self):
+        self.type = 'brick'
+        self.x = randint(100, 700)
+        self.y = randint(100, 500)
+        self.r = randint(30, 50)
+        self.Vx = randint(-300, 300)
+        self.Vy = randint(-300, 300)
+        self.color = COLORS[randint(0, 5)]
+        self.is_clicked = False
+        self.timer = time_to_catch
+
+
+class Ball:
+    def __init__(self):
+        self.type = 'ball'
+        self.x = randint(100, 700)
+        self.y = randint(100, 500)
+        self.r = randint(30, 50)
+        self.Vx = randint(-300, 300)
+        self.Vy = randint(-300, 300)
+        self.color = COLORS[randint(0, 5)]
+        self.is_clicked = False
+        self.timer = time_to_catch
+
+    def draw(self):
+        circle(screen, self.color, (int(self.x), int(self.y)), self.r)
+    
+    def clicked_check(self, event):
+        distance = sqrt((event.pos[0] - self.x)**2 + (event.pos[1] - self.y)**2)    # distance from a center of the aim to a click place
+        if distance <= self.r:
+            self.is_clicked = True
+        else: 
+            self.is_clicked = False
+
+    def moove(self):
+        # borders check
+        if self.x - self.r < 0:
+            self.x = self.r
+            self.Vx = -self.Vx
+        if self.x + self.r > screen_width:
+            self.x = screen_width - self.r 
+            self.Vx = -self.Vx
+        if self.y - self.r < 0:
+            self.y = self.r
+            self.Vy = -self.Vy
+        if self.y + self.r > screen_height:
+            self.y = screen_height - self.r
+            self.Vy = -self.Vy
+        
+        self.x += self.Vx * delta_time
+        self.y += self.Vy * delta_time
+
 def new_aim():
     '''
     creates new element in the aims list
     '''
     global aims
-
-    aim = {
-        'x' : randint(100, 700),
-        'y' : randint(100, 500),
-        'r' : randint(30, 50),
-        'Vx' : randint(-300, 300),
-        'Vy' : randint(-300, 300),
-        'color' : COLORS[randint(0, 5)],
-        'is_clicked' : False,
-        'timer' : time_to_catch
-    }
-
+    # if (score + 1) // 3:
+    aim = Ball()
+    # else:
+    #     aim = Brick()
     aims.append(aim)
 
 
@@ -47,25 +92,22 @@ def redraw_map():
     Draws map with updated parameters
     '''
     screen.fill(BLACK)
-    for aim in aims:
-        circle(screen, aim['color'], (int(aim['x']), int(aim['y'])), aim['r'])
 
-        # timer visualization
-        end_angle = 2 * pi * aim['timer'] / time_to_catch
-        arc(screen, WHITE, (int(aim['x'] - aim['r'] - 3), int(aim['y'] - aim['r'] - 3), aim['r'] * 2 + 6, aim['r'] * 2 + 6), 0, end_angle, 5)
+    for aim in aims:
+            aim.draw()
+
+            # timer visualization (white strip)
+            if aim.type == 'ball':
+                end_angle = 2 * pi * aim.timer / time_to_catch
+                arc(screen, WHITE, (int(aim.x - aim.r - 3), int(aim.y - aim.r - 3), aim.r * 2 + 6, aim.r * 2 + 6), 0, end_angle, 5)
 
 
 def click_check(event):
     '''
     Checks which aims was clicked and updaiting is_clicked parameter for every aim
     '''
-    global aims
     for aim in aims:
-        distance = sqrt((event.pos[0] - aim['x'])**2 + (event.pos[1] - aim['y'])**2)    # distance from a center of the aim to a click place
-        if distance <= aim['r']:
-            aim['is_clicked'] = True
-        else: 
-            aim['is_clicked'] = False
+        aim.clicked_check(event)
             
 
 def motion():
@@ -74,23 +116,7 @@ def motion():
     '''
     global aims
     for aim in aims:
-        # borders check
-        if aim['x'] - aim['r'] < 0:
-            aim['x'] = aim['r']
-            aim['Vx'] = -aim['Vx']
-        if aim['x'] + aim['r'] > screen_width:
-            aim['x'] = screen_width - aim['r'] 
-            aim['Vx'] = -aim['Vx']
-        if aim['y'] - aim['r'] < 0:
-            aim['y'] = aim['r']
-            aim['Vy'] = -aim['Vy']
-        if aim['y'] + aim['r'] > screen_height:
-            aim['y'] = screen_height - aim['r']
-            aim['Vy'] = -aim['Vy']
-        
-        # moving
-        aim['x'] += aim['Vx'] * delta_time
-        aim['y'] += aim['Vy'] * delta_time
+        aim.moove()
 
 
 def aims_refresh():
@@ -105,7 +131,7 @@ def aims_refresh():
         
     # removing clicked aims 
     for aim in aims:
-        if aim['is_clicked']:
+        if aim.is_clicked:
             aims.remove(aim)
         
 
@@ -116,7 +142,7 @@ def time_flow():
     global spawn_timer
     spawn_timer -= delta_time
     for aim in aims:
-        aim['timer'] -= delta_time
+        aim.timer -= delta_time
 
 
 def recalculate_score():
@@ -125,7 +151,7 @@ def recalculate_score():
     '''
     global score
     for aim in aims:
-        if aim['is_clicked']:
+        if aim.is_clicked:
             score += 1
 
 
@@ -135,7 +161,7 @@ def check_loose():
     '''
     global loosed, aims
     for aim in aims:
-        if aim['timer'] < 0:
+        if aim.timer < 0:
             loose_window()
             loosed = True
             aims = []
@@ -173,7 +199,7 @@ def try_again(event):
     '''
     Restarts if "try again" button pressed
     '''
-    if (textRect3.left < event.pos[0] < textRect3.right) and (textRect3.top < event.pos[1] < textRect3.top + textRect3.height):
+    if (textRect3.left < event.pos[0] < textRect3.right) and (textRect3.top < event.pos[1] < textRect3.top + textRect3.height): 
         return True
     else:
         return False
