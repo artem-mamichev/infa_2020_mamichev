@@ -22,21 +22,24 @@ screen_height = 900
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 
-def new_ball():
+def new_aim():
     '''
-    creates new element in the balls list
+    creates new element in the aims list
     '''
-    global balls, time_to_catch
-    Vx = randint(-300,300)
-    Vy = randint(-300,300)
-    x = randint(100,700)
-    y = randint(100,500)
-    r = randint(30,50)
-    color = COLORS[randint(0, 5)]
-    timer = time_to_catch
-    is_clicked = False
+    global aims
 
-    balls.append([x, y, r, Vx, Vy, color, is_clicked, timer])
+    aim = {
+        'x' : randint(100, 700),
+        'y' : randint(100, 500),
+        'r' : randint(30, 50),
+        'Vx' : randint(-300, 300),
+        'Vy' : randint(-300, 300),
+        'color' : COLORS[randint(0, 5)],
+        'is_clicked' : False,
+        'timer' : time_to_catch
+    }
+
+    aims.append(aim)
 
 
 def redraw_map():
@@ -44,85 +47,85 @@ def redraw_map():
     Draws map with updated parameters
     '''
     screen.fill(BLACK)
-    for ball in balls:
-        circle(screen, ball[5], (int(ball[0]), int(ball[1])), ball[2])
+    for aim in aims:
+        circle(screen, aim['color'], (int(aim['x']), int(aim['y'])), aim['r'])
 
         # timer visualization
-        end_angle = 2 * pi * ball[7] / time_to_catch
-        arc(screen, WHITE, (int(ball[0] - ball[2] - 3), int(ball[1] - ball[2] - 3), ball[2] * 2 + 6, ball[2] * 2 + 6), 0, end_angle, 5)
+        end_angle = 2 * pi * aim['timer'] / time_to_catch
+        arc(screen, WHITE, (int(aim['x'] - aim['r'] - 3), int(aim['y'] - aim['r'] - 3), aim['r'] * 2 + 6, aim['r'] * 2 + 6), 0, end_angle, 5)
 
 
 def click_check(event):
     '''
-    Checks which balls was clicked and updaiting is_clicked parameter for every ball
+    Checks which aims was clicked and updaiting is_clicked parameter for every aim
     '''
-    global balls
-    for ball in balls:
-        distance = sqrt((event.pos[0] - ball[0])**2 + (event.pos[1] - ball[1])**2)    # distance from a center of the ball to a click place
-        if distance <= ball[2]:
-            ball[6] = True
+    global aims
+    for aim in aims:
+        distance = sqrt((event.pos[0] - aim['x'])**2 + (event.pos[1] - aim['y'])**2)    # distance from a center of the aim to a click place
+        if distance <= aim['r']:
+            aim['is_clicked'] = True
         else: 
-            ball[6] = False
+            aim['is_clicked'] = False
             
 
 def motion():
     '''
-    Recalculates positions of the balls on the next frame
+    Recalculates positions of the aims on the next frame
     '''
-    global balls
-    for ball in balls:
+    global aims
+    for aim in aims:
         # borders check
-        if ball[0] - ball[2] < 0:
-            ball[0] = ball[2]
-            ball[3] = -ball[3]
-        if ball[0] + ball[2] > screen_width:
-            ball[0] = screen_width - ball[2] 
-            ball[3] = -ball[3]
-        if ball[1] - ball[2] < 0:
-            ball[1] = ball[2]
-            ball[4] = -ball[4]
-        if ball[1] + ball[2] > screen_height:
-            ball[1] = screen_height - ball[2]
-            ball[4] = -ball[4]
+        if aim['x'] - aim['r'] < 0:
+            aim['x'] = aim['r']
+            aim['Vx'] = -aim['Vx']
+        if aim['x'] + aim['r'] > screen_width:
+            aim['x'] = screen_width - aim['r'] 
+            aim['Vx'] = -aim['Vx']
+        if aim['y'] - aim['r'] < 0:
+            aim['y'] = aim['r']
+            aim['Vy'] = -aim['Vy']
+        if aim['y'] + aim['r'] > screen_height:
+            aim['y'] = screen_height - aim['r']
+            aim['Vy'] = -aim['Vy']
         
         # moving
-        ball[0] += ball[3] * delta_time
-        ball[1] += ball[4] * delta_time
+        aim['x'] += aim['Vx'] * delta_time
+        aim['y'] += aim['Vy'] * delta_time
 
 
-def balls_refresh():
+def aims_refresh():
     '''
-    removing clicked balls, adding new ones
+    removing clicked aims, adding new ones
     '''
     # spawn
     global spawn_timer
     if spawn_timer <= 0:
-        new_ball()
+        new_aim()
         spawn_timer = spawn_time
         
-    # removing clicked balls 
-    for ball in balls:
-        if ball[6]:
-            balls.remove(ball)
+    # removing clicked aims 
+    for aim in aims:
+        if aim['is_clicked']:
+            aims.remove(aim)
         
 
 def time_flow():
     '''
     recalculates all timers
     '''
-    global spawn_timer, delta_time
+    global spawn_timer
     spawn_timer -= delta_time
-    for ball in balls:
-        ball[7] -= delta_time
+    for aim in aims:
+        aim['timer'] -= delta_time
 
 
 def recalculate_score():
     '''
-    adds score for clicked balls
+    adds score for clicked aims
     '''
-    global score, spawn_time
-    for ball in balls:
-        if ball[6]:
+    global score
+    for aim in aims:
+        if aim['is_clicked']:
             score += 1
 
 
@@ -130,12 +133,12 @@ def check_loose():
     '''
     Checking if the player loose
     '''
-    global loosed, balls
-    for ball in balls:
-        if ball[7] < 0:
+    global loosed, aims
+    for aim in aims:
+        if aim['timer'] < 0:
             loose_window()
             loosed = True
-            balls = []
+            aims = []
 
 
 def loose_window():
@@ -176,8 +179,17 @@ def try_again(event):
         return False
 
 
-def main():
-    global loosed, spawn_time
+def main():   
+    global loosed, spawn_time, spawn_timer, delta_time, time_to_catch, score, aims
+    time_to_catch = 3    # seconds player has to click the aim 
+    spawn_time0 = 1   # time before spawns in the beginning
+    spawn_time = spawn_time0    # current spawn time
+    spawn_timer = 0    
+    delta_time = 1 / FPS    # time between two frames in seconds  
+    aims = []  
+    clock = pygame.time.Clock()
+    loosed = False
+    score = 0
     while not loosed:
         clock.tick(FPS)
         for event in pygame.event.get():
@@ -188,7 +200,7 @@ def main():
                     click_check(event)
 
         recalculate_score()
-        balls_refresh()
+        aims_refresh()
         motion()
         redraw_map()    
         check_loose()
@@ -198,32 +210,24 @@ def main():
 
         pygame.display.update()
 
+    while loosed:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if try_again(event):
+                        loosed = False
+                        score = 0
+                        main()
 
-time_to_catch = 3    # seconds to click on the ball 
-spawn_time0 = 1   # time before spawns in the beginning
-spawn_time = spawn_time0    # current spawn time
-spawn_timer = 0    
-delta_time = 1 / FPS    # time between two frames    
-balls = []    # balls[i] = [x, y, r, Vx, Vy, color, is_clicked, timer]
-              #             0  1  2  3   4     5         6        7
-pygame.display.update()
-clock = pygame.time.Clock()
-loosed = False
-score = 0
+
+
 
 
 main()
 
-while loosed:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if try_again(event):
-                    loosed = False
-                    score = 0
-                    main()
+
                     
     
 pygame.quit()
