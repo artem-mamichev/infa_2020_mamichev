@@ -24,19 +24,88 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 
 class Brick:
     def __init__(self):
+        '''
+        x, y - rectangle centre coordinates  
+        width - length of horizontal side
+        height - length of vertical side
+        timer - time left to click this brick, otherwise player looses
+        '''
         self.type = 'brick'
         self.x = randint(100, 700)
         self.y = randint(100, 500)
-        self.r = randint(30, 50)
-        self.Vx = randint(-300, 300)
-        self.Vy = randint(-300, 300)
+        self.width = randint(40, 100)
+        self.height = randint(40, 100)
+        self.Vx = randint(-500, 500)
+        self.Vy = randint(-500, 500)
         self.color = COLORS[randint(0, 5)]
         self.is_clicked = False
         self.timer = time_to_catch
 
 
+    def draw(self):
+        rect(screen, self.color, (int(self.x - self.width/2), int(self.y - self.height/2), self.width, self.height))
+
+        # timer visualization (white strip)
+        time_passed = time_to_catch - self.timer
+        strip_length = 2 * (self.height + self.width) * time_passed / time_to_catch
+        for sign in [1, -1]:
+            if strip_length > 0:
+                if strip_length // self.height == 0:
+                    line(screen, WHITE, (self.x + self.width/2 * sign, self.y - self.height/2 * sign),
+                                        (self.x + self.width/2 * sign, self.y - self.height/2 * sign + strip_length * sign), 5)
+                    strip_length = 0
+                else: 
+                    line(screen, WHITE, (self.x + self.width/2 * sign, self.y - self.height/2 * sign),
+                                        (self.x + self.width/2 * sign, self.y + self.height/2 * sign), 5)
+                    strip_length -= self.height
+            if strip_length > 0:
+                if strip_length // self.width == 0:
+                    line(screen, WHITE, (self.x + self.width/2 * sign, self.y + self.height/2 * sign),
+                                        (self.x + self.width/2 * sign - strip_length * sign, self.y + self.height/2 * sign), 5)
+                    strip_length = 0
+                else:
+                    line(screen, WHITE, (self.x + self.width/2 * sign, self.y + self.height/2 * sign),
+                                        (self.x - self.width/2 * sign, self.y + self.height/2 * sign), 5)
+                    strip_length -= self.width
+
+
+    def clicked_check(self, event):
+        if (abs(event.pos[0] - self.x) <= self.width/2) and (abs(event.pos[1] - self.y) <= self.height/2):
+            self.is_clicked = True
+        else: 
+            self.is_clicked = False
+    
+
+    def moove(self):
+        x = self.x
+        y = self.y
+        Vx = self.Vx
+        Vy = self.Vy
+        # borders check
+        if (x < 0) or (x > screen_width) or (y < 0) or (y > screen_height):
+            x = randint(100, 700)
+            y = randint(100, 500)
+
+        V = sqrt(Vx**2 + Vy**2)
+        Vx = randint(int(-abs(V)), int(abs(V)))
+        Vy = sqrt(V**2 - Vx**2)
+        x += Vx * delta_time
+        y += Vy * delta_time
+
+        self.x = x
+        self.y = y
+        self.Vx = Vx
+        self.Vy = Vy
+
+
+
 class Ball:
     def __init__(self):
+        '''
+        x, y - ball centre coordinates 
+        r - ball radius
+        timer - time left to click this ball, otherwise player looses
+        '''
         self.type = 'ball'
         self.x = randint(100, 700)
         self.y = randint(100, 500)
@@ -47,15 +116,22 @@ class Ball:
         self.is_clicked = False
         self.timer = time_to_catch
 
+
     def draw(self):
         circle(screen, self.color, (int(self.x), int(self.y)), self.r)
+
+        # timer visualization (white strip)
+        end_angle = 2 * pi * self.timer / time_to_catch
+        arc(screen, WHITE, (int(self.x - self.r - 3), int(self.y - self.r - 3), self.r * 2 + 6, self.r * 2 + 6), 0, end_angle, 5)
     
+
     def clicked_check(self, event):
-        distance = sqrt((event.pos[0] - self.x)**2 + (event.pos[1] - self.y)**2)    # distance from a center of the aim to a click place
+        distance = sqrt((event.pos[0] - self.x)**2 + (event.pos[1] - self.y)**2)    # distance from a center of the ball to a click place
         if distance <= self.r:
             self.is_clicked = True
         else: 
             self.is_clicked = False
+
 
     def moove(self):
         # borders check
@@ -75,15 +151,17 @@ class Ball:
         self.x += self.Vx * delta_time
         self.y += self.Vy * delta_time
 
+
+
 def new_aim():
     '''
     creates new element in the aims list
     '''
     global aims
-    # if (score + 1) // 3:
-    aim = Ball()
-    # else:
-    #     aim = Brick()
+    if (score + 1) % 3 == 0:
+        aim = Brick()
+    else:
+        aim = Ball()
     aims.append(aim)
 
 
@@ -92,14 +170,8 @@ def redraw_map():
     Draws map with updated parameters
     '''
     screen.fill(BLACK)
-
     for aim in aims:
-            aim.draw()
-
-            # timer visualization (white strip)
-            if aim.type == 'ball':
-                end_angle = 2 * pi * aim.timer / time_to_catch
-                arc(screen, WHITE, (int(aim.x - aim.r - 3), int(aim.y - aim.r - 3), aim.r * 2 + 6, aim.r * 2 + 6), 0, end_angle, 5)
+        aim.draw()
 
 
 def click_check(event):
@@ -114,7 +186,6 @@ def motion():
     '''
     Recalculates positions of the aims on the next frame
     '''
-    global aims
     for aim in aims:
         aim.moove()
 
