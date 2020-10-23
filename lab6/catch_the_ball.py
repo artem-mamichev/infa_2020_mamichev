@@ -23,6 +23,8 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 
 
 class Brick:
+    global time_factor    # how to make global var among the separate class?
+    time_factor = 1.5
     def __init__(self):
         '''
         x, y - rectangle centre coordinates  
@@ -30,24 +32,23 @@ class Brick:
         height - length of vertical side
         timer - time left to click this brick, otherwise player looses
         '''
-        self.type = 'brick'
         self.x = randint(100, 700)
         self.y = randint(100, 500)
         self.width = randint(40, 100)
         self.height = randint(40, 100)
-        self.Vx = randint(-500, 500)
-        self.Vy = randint(-500, 500)
+        self.Vx = randint(-400, 400)
+        self.Vy = randint(-400, 400)
         self.color = COLORS[randint(0, 5)]
         self.is_clicked = False
-        self.timer = time_to_catch
+        self.timer = time_factor * time_to_catch
 
 
     def draw(self):
         rect(screen, self.color, (int(self.x - self.width/2), int(self.y - self.height/2), self.width, self.height))
 
         # timer visualization (white strip)
-        time_passed = time_to_catch - self.timer
-        strip_length = 2 * (self.height + self.width) * time_passed / time_to_catch
+        time_passed = time_factor * time_to_catch - self.timer
+        strip_length = 2 * (self.height + self.width) * time_passed / (time_factor * time_to_catch)
         for sign in [1, -1]:
             if strip_length > 0:
                 if strip_length // self.height == 0:
@@ -106,7 +107,6 @@ class Ball:
         r - ball radius
         timer - time left to click this ball, otherwise player looses
         '''
-        self.type = 'ball'
         self.x = randint(100, 700)
         self.y = randint(100, 500)
         self.r = randint(30, 50)
@@ -121,7 +121,7 @@ class Ball:
         circle(screen, self.color, (int(self.x), int(self.y)), self.r)
 
         # timer visualization (white strip)
-        end_angle = 2 * pi * self.timer / time_to_catch
+        end_angle = 2 * pi * self.timer / (time_factor * time_to_catch)
         arc(screen, WHITE, (int(self.x - self.r - 3), int(self.y - self.r - 3), self.r * 2 + 6, self.r * 2 + 6), 0, end_angle, 5)
     
 
@@ -157,12 +157,13 @@ def new_aim():
     '''
     creates new element in the aims list
     '''
-    global aims
-    if (score + 1) % 3 == 0:
+    global aims, spawns_number
+    if (spawns_number + 1) % 5 == 0:
         aim = Brick()
     else:
         aim = Ball()
     aims.append(aim)
+    spawns_number += 1
 
 
 def redraw_map():
@@ -223,7 +224,10 @@ def recalculate_score():
     global score
     for aim in aims:
         if aim.is_clicked:
-            score += 1
+            if isinstance(aim, Ball):
+                score += 1
+            if isinstance(aim, Brick):
+                score += 2
 
 
 def check_loose():
@@ -277,11 +281,12 @@ def try_again(event):
 
 
 def main():   
-    global loosed, spawn_time, spawn_timer, delta_time, time_to_catch, score, aims
+    global loosed, spawn_time, spawn_timer, delta_time, time_to_catch, score, aims, spawns_number
     time_to_catch = 3    # seconds player has to click the aim 
-    spawn_time0 = 1   # time before spawns in the beginning
+    spawn_time0 = 1.2   # time before spawns in the beginning
     spawn_time = spawn_time0    # current spawn time
     spawn_timer = 0    
+    spawns_number = 0    # number of spawned aims
     delta_time = 1 / FPS    # time between two frames in seconds  
     aims = []  
     clock = pygame.time.Clock()
