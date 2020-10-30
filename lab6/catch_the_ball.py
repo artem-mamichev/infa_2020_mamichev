@@ -173,6 +173,12 @@ def redraw_map():
     screen.fill(BLACK)
     for aim in aims:
         aim.draw()
+    
+    font = pygame.font.Font('freesansbold.ttf', 30)
+    textSurface = font.render(str(score), True, WHITE, BLACK)
+    textRect = textSurface.get_rect()
+    textRect.center = (25,30)
+    screen.blit(textSurface, textRect)
 
 
 def click_check(event):
@@ -263,9 +269,9 @@ def loose_window():
     textRect3.center = (int(screen_width / 2), int(screen_height * 0.75))
 
     screen.fill(BLACK)
-    screen.blit(textSurface, textRect)
     screen.blit(textSurface2, textRect2) 
     screen.blit(textSurface3, textRect3) 
+    screen.blit(textSurface, textRect)
 
     pygame.display.update()
 
