@@ -12,18 +12,18 @@ canv.pack(fill=tk.BOTH, expand=1)
 
 
 class Ball():
-    def __init__(self, x=40, y=450):
+    def __init__(self, x=40.0, y=450.0):
         """ Конструктор класса ball
-
         Args:
         x - начальное положение мяча по горизонтали
         y - начальное положение мяча по вертикали
         """
+        self.angle = 0
         self.x = x
         self.y = y
         self.r = 10
-        self.vx = 5
-        self.vy = 5
+        self.vx = 10
+        self.vy = 10
         self.color = choice(['blue', 'green', 'red', 'brown'])
         self.id = canv.create_oval(
                 self.x - self.r,
@@ -32,7 +32,7 @@ class Ball():
                 self.y + self.r,
                 fill=self.color
         )
-        self.live = 30
+        self.lifetimer = 2    # in seconds
 
     def set_coords(self):
         canv.coords(
@@ -43,57 +43,61 @@ class Ball():
                 self.y + self.r
         )
 
-    def move(self, g):
+    def move(self, g, recovery_factor):
         """Переместить мяч по прошествии единицы времени.
-
         Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
         self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
         и стен по краям окна (размер окна 800х600).
+        Args:
+        g - ускорение свободного падения
+        recovery_factor - во столько раз увеличится модуль скорости после столкновения, число (0;1)
         """
         x = self.x
         y = self.y
         vx = self.vx
         vy = self.vy
+        r = self.r
 
-        vy += g * delta_time
-        x += int(vx * delta_time)
-        y -= int(vy * delta_time)
+        vy += 250 * g * delta_time    # 250 pixels : 1 meter
+        x += vx * delta_time
+        y += vy * delta_time
 
-        if x > 800:
-            x = 800
-            vx = -vx
-        if x < 0:
-            x = 0
-            vx = -vx
-        if y > 600:
-            y = 600
-            vy = -vy
-        if y < 0:
-            y = 0
-            vy -= vy
-        
+        if x > 800 - r:
+            x = 800 - r
+            vx = -vx * recovery_factor
+        if x < r:
+            x = r
+            vx = -vx * recovery_factor
+        if y > 600 - r:
+            y = 600 - r
+            vy = -vy * recovery_factor
+        if y < r:
+            y = r
+            vy -= vy * recovery_factor
+
+        canv.move(self.id, vx * delta_time, vy * delta_time + 250 * g * delta_time**2 / 2)
+
         self.x = x
         self.y = y
         self.vx = vx
         self.vy = vy
 
+
     def hit_test(self, obj):
         """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
-
         Args:
             obj: Обьект, с которым проверяется столкновение.
         Returns:
             Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
         """
-        if math.sqrt((obj.x - self.x)**2 + (obj.y - obj.y)**2) <= self.r + obj.r:
+        if (obj.x - self.x)**2 + (obj.y - self.y)**2 <= (self.r + obj.r) ** 2:
             return True
         return False
-
 
 class Gun():
     def __init__(self):
         self.fire_power = 10
-        self.fire_on = 0
+        self.fire_on = False
         self.angle = 1
         self.id = canv.create_line(20, 450, 50, 420, width=7) 
 
@@ -102,19 +106,18 @@ class Gun():
 
     def fire_end(self, event):
         """Выстрел мячом.
-
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
         global balls, bullet
         bullet += 1
         new_ball = Ball()
-        new_ball.r += 5
+        new_ball.r = 15
         self.an = math.atan((event.y-new_ball.y) / (event.x-new_ball.x))
-        new_ball.vx = self.f2_power * math.cos(self.angle)
-        new_ball.vy = - self.f2_power * math.sin(self.angle)
+        new_ball.vx = 20 * self.fire_power * math.cos(self.angle)
+        new_ball.vy = 20 * self.fire_power * math.sin(self.angle)
         balls += [new_ball]
-        self.fire_on = 0
+        self.fire_on = False
         self.fire_power = 10
 
     def targetting(self, event=0):
@@ -122,8 +125,8 @@ class Gun():
         if event:
             x = event.x
             y = event.y
-            if x < 20:
-                x = 20
+            if x < 21:
+                x = 21
             self.angle = math.atan((y - 450) / (x - 20))
         
         if self.fire_on:
@@ -165,17 +168,20 @@ class Target():
         """Попадание шарика в цель."""
         canv.coords(self.id, -10, -10, -10, -10)
         self.points += points
+        self.live = False
         canv.itemconfig(self.id_points, text=self.points)
 
+    def move(self):
+        pass
 
+
+
+gun = Gun()
 target = Target()
 screen1 = canv.create_text(400, 300, text='', font='28')
-gun = Gun()
-bullet = 0
-balls = []
-FPS = 33 
-delta_time = 1 / FPS
 
+FPS = 100
+delta_time = 1 / FPS
 
 def new_game(event=''):
     global gun, target, screen1, balls, bullet
@@ -189,7 +195,11 @@ def new_game(event=''):
     target.live = True
     while target.live or balls:
         for ball in balls:
-            ball.move(10)
+            ball.move(9.8, 0.8)
+            ball.lifetimer -= delta_time
+            if ball.lifetimer <= 0:
+                balls.remove(ball)
+                canv.delete(ball.id)
             if ball.hit_test(target) and target.live:
                 target.live = False
                 target.hit()
@@ -200,11 +210,11 @@ def new_game(event=''):
         time.sleep(delta_time)
         gun.targetting()
         gun.power_up()
+    canv.delete(Target)
     canv.itemconfig(screen1, text='')
-    canv.delete(Gun)
     root.after(750, new_game)
 
 
 new_game()
 
-mainloop()
+tk.mainloop()
