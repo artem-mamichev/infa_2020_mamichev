@@ -5,10 +5,91 @@ import time
 
 
 root = tk.Tk()
+#root.withdraw()
 fr = tk.Frame(root)
 root.geometry('800x600')
 canv = tk.Canvas(root, bg='white')
 canv.pack(fill=tk.BOTH, expand=1)
+
+
+class Hull():
+    def __intit__(self, x=200.0):
+        '''
+        Конструктор класса Hull
+        Args:
+        x, y - координаты центра корпуса
+        '''
+        self.speed = 10
+        self.width = 300
+        self.height = 100
+        self.x = x
+        self.y = 600 - self.height/2
+        self.color = 'green'
+        self.id = canv.create_oval(x - self.width/2, 
+                                   y - self.height/2, 
+                                   x + self.width/2, 
+                                   y + self.height/2, 
+                                   fill=self.color)
+
+    def move(self, event=0):
+        canv.itemconfig(screen1, text='BUTTON PRESSED')
+        print('pressed')
+
+        if event.keysym == 'Right':
+            move(self.id, self.speed, 0)
+
+
+class Gun():
+    def __init__(self):
+        self.fire_power = 10
+        self.fire_on = False
+        self.angle = 1
+        self.id = canv.create_line(20, 450, 50, 420, width=7) 
+
+    def fire_start(self, event):
+        self.fire_on = True
+
+    def fire_end(self, event):
+        """Выстрел мячом.
+        Происходит при отпускании кнопки мыши.
+        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
+        """
+        global balls, bullet
+        bullet += 1
+        new_ball = Ball()
+        new_ball.r = 15
+        self.an = math.atan((event.y-new_ball.y) / (event.x-new_ball.x))
+        new_ball.vx = 20 * self.fire_power * math.cos(self.angle)
+        new_ball.vy = 20 * self.fire_power * math.sin(self.angle)
+        balls += [new_ball]
+        self.fire_on = False
+        self.fire_power = 10
+
+    def targetting(self, event=0):
+        """Прицеливание. Зависит от положения мыши."""
+        if event:
+            x = event.x
+            y = event.y
+            if x < 21:
+                x = 21
+            self.angle = math.atan((y - 450) / (x - 20))
+        
+        if self.fire_on:
+            canv.itemconfig(self.id, fill='orange')
+        else:
+            canv.itemconfig(self.id, fill='black')
+        canv.coords(self.id, 20, 450,
+                    20 + max(self.fire_power, 20) * math.cos(self.angle),
+                    450 + max(self.fire_power, 20) * math.sin(self.angle)
+                    )
+
+    def power_up(self):
+        if self.fire_on:
+            if self.fire_power < 100:
+                self.fire_power += 1
+            canv.itemconfig(self.id, fill='orange')
+        else:
+            canv.itemconfig(self.id, fill='black')
 
 
 class Ball():
@@ -94,58 +175,6 @@ class Ball():
             return True
         return False
 
-class Gun():
-    def __init__(self):
-        self.fire_power = 10
-        self.fire_on = False
-        self.angle = 1
-        self.id = canv.create_line(20, 450, 50, 420, width=7) 
-
-    def fire_start(self, event):
-        self.fire_on = True
-
-    def fire_end(self, event):
-        """Выстрел мячом.
-        Происходит при отпускании кнопки мыши.
-        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
-        """
-        global balls, bullet
-        bullet += 1
-        new_ball = Ball()
-        new_ball.r = 15
-        self.an = math.atan((event.y-new_ball.y) / (event.x-new_ball.x))
-        new_ball.vx = 20 * self.fire_power * math.cos(self.angle)
-        new_ball.vy = 20 * self.fire_power * math.sin(self.angle)
-        balls += [new_ball]
-        self.fire_on = False
-        self.fire_power = 10
-
-    def targetting(self, event=0):
-        """Прицеливание. Зависит от положения мыши."""
-        if event:
-            x = event.x
-            y = event.y
-            if x < 21:
-                x = 21
-            self.angle = math.atan((y - 450) / (x - 20))
-        
-        if self.fire_on:
-            canv.itemconfig(self.id, fill='orange')
-        else:
-            canv.itemconfig(self.id, fill='black')
-        canv.coords(self.id, 20, 450,
-                    20 + max(self.fire_power, 20) * math.cos(self.angle),
-                    450 + max(self.fire_power, 20) * math.sin(self.angle)
-                    )
-
-    def power_up(self):
-        if self.fire_on:
-            if self.fire_power < 100:
-                self.fire_power += 1
-            canv.itemconfig(self.id, fill='orange')
-        else:
-            canv.itemconfig(self.id, fill='black')
-
 
 class Target():
     def __init__(self):
@@ -175,7 +204,7 @@ class Target():
         pass
 
 
-
+hull = Hull()
 gun = Gun()
 target = Target()
 screen1 = canv.create_text(400, 300, text='', font='28')
@@ -184,13 +213,14 @@ FPS = 100
 delta_time = 1 / FPS
 
 def new_game(event=''):
-    global gun, target, screen1, balls, bullet
+    global gun, target, screen1, balls, bullet, hull
     target.new_target()
     bullet = 0    # number of wasted bullets
     balls = []
     canv.bind('<Button-1>', gun.fire_start)
     canv.bind('<ButtonRelease-1>', gun.fire_end)
     canv.bind('<Motion>', gun.targetting)
+    canv.bind('<Key>', hull.move)
   
     target.live = True
     while target.live or balls:
@@ -217,4 +247,4 @@ def new_game(event=''):
 
 new_game()
 
-tk.mainloop()
+root.mainloop()
