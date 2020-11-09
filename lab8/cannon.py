@@ -3,9 +3,7 @@ import tkinter as tk
 import math
 import time
 
-
 root = tk.Tk()
-#root.withdraw()
 fr = tk.Frame(root)
 root.geometry('800x600')
 canv = tk.Canvas(root, bg='white')
@@ -13,38 +11,43 @@ canv.pack(fill=tk.BOTH, expand=1)
 
 
 class Hull():
-    def __intit__(self, x=200.0):
+    def __init__(self, x=200):
         '''
         Конструктор класса Hull
         Args:
         x, y - координаты центра корпуса
         '''
-        self.speed = 10
-        self.width = 300
-        self.height = 100
+        self.width = 150
+        self.height = 50
         self.x = x
-        self.y = 600 - self.height/2
+        self.y = 600 - self.height/2 
         self.color = 'green'
-        self.id = canv.create_oval(x - self.width/2, 
-                                   y - self.height/2, 
-                                   x + self.width/2, 
-                                   y + self.height/2, 
+        self.id = canv.create_oval(self.x - self.width/2, 
+                                   self.y - self.height/2, 
+                                   self.x + self.width/2, 
+                                   self.y + self.height/2, 
                                    fill=self.color)
 
-    def move(self, event=0):
-        canv.itemconfig(screen1, text='BUTTON PRESSED')
-        print('pressed')
-
-        if event.keysym == 'Right':
-            move(self.id, self.speed, 0)
+    def move(self, event=0, speed=100):
+        if event:
+            if event.keysym == 'a':
+                if self.x - speed >= 75:
+                    canv.move(self.id, -speed, 0)
+                    self.x -= speed
+            if event.keysym == 'd':
+                if self.x + speed <= 725:
+                    self.x += speed
+                    canv.move(self.id, speed, 0)
 
 
 class Gun():
-    def __init__(self):
+    def __init__(self, x=200, y=550):
         self.fire_power = 10
         self.fire_on = False
         self.angle = 1
-        self.id = canv.create_line(20, 450, 50, 420, width=7) 
+        self.x = x
+        self.y = y
+        self.id = canv.create_line(x, y, x + 30, y - 30, width=7)
 
     def fire_start(self, event):
         self.fire_on = True
@@ -56,7 +59,7 @@ class Gun():
         """
         global balls, bullet
         bullet += 1
-        new_ball = Ball()
+        new_ball = Ball(self.x, self.y)
         new_ball.r = 15
         self.an = math.atan((event.y-new_ball.y) / (event.x-new_ball.x))
         new_ball.vx = 20 * self.fire_power * math.cos(self.angle)
@@ -70,17 +73,23 @@ class Gun():
         if event:
             x = event.x
             y = event.y
-            if x < 21:
-                x = 21
-            self.angle = math.atan((y - 450) / (x - 20))
-        
+            if y > 550:
+                y = 549
+            if x == self.x:
+                self.angle = math.pi / 2
+            else:
+                if x < self.x:
+                    self.angle = math.atan((y - self.y) / (x - self.x)) + math.pi
+                else:
+                    self.angle = math.atan((y - self.y) / (x - self.x))
+
         if self.fire_on:
             canv.itemconfig(self.id, fill='orange')
         else:
             canv.itemconfig(self.id, fill='black')
-        canv.coords(self.id, 20, 450,
-                    20 + max(self.fire_power, 20) * math.cos(self.angle),
-                    450 + max(self.fire_power, 20) * math.sin(self.angle)
+        canv.coords(self.id, self.x, self.y,
+                    self.x + max(self.fire_power, 20) * math.cos(self.angle),
+                    self.y + max(self.fire_power, 20) * math.sin(self.angle)
                     )
 
     def power_up(self):
@@ -90,6 +99,41 @@ class Gun():
             canv.itemconfig(self.id, fill='orange')
         else:
             canv.itemconfig(self.id, fill='black')
+
+    def move(self, event=0, speed=100):
+        if event:
+            if event.keysym == 'a':
+                if self.x - speed >= 75:
+                    canv.move(self.id, -speed, 0)
+                    self.x -= speed
+            if event.keysym == 'd':
+                if self.x + speed <= 725:
+                    self.x += speed
+                    canv.move(self.id, speed, 0)
+
+
+class Tank():
+    def __init__(self, x=200, speed=100):
+        self.x = x
+        self.speed = speed
+        self.hull = Hull(x)
+        self.gun = Gun(x)
+
+    def move(self, event=0):
+        self.hull.move(event, self.speed)
+        self.gun.move(event, self.speed)
+
+    def targetting(self, event=0):
+        self.gun.targetting(event)
+
+    def power_up(self):
+        self.gun.power_up()
+    
+    def fire_start(self, event=0):
+        self.gun.fire_start(event)
+    
+    def fire_end(self, event=0):
+        self.gun.fire_end(event)
 
 
 class Ball():
@@ -181,7 +225,7 @@ class Target():
         self.points = 0
         self.live = True
         self.id = canv.create_oval(0,0,0,0)
-        self.id_points = canv.create_text(30,30,text = self.points,font = '28')
+        self.id_points = canv.create_text(30, 30, text = self.points, font = '28')
         self.new_target()
 
     def new_target(self):
@@ -204,8 +248,7 @@ class Target():
         pass
 
 
-hull = Hull()
-gun = Gun()
+tank = Tank(x=200, speed=100)
 target = Target()
 screen1 = canv.create_text(400, 300, text='', font='28')
 
@@ -217,10 +260,10 @@ def new_game(event=''):
     target.new_target()
     bullet = 0    # number of wasted bullets
     balls = []
-    canv.bind('<Button-1>', gun.fire_start)
-    canv.bind('<ButtonRelease-1>', gun.fire_end)
-    canv.bind('<Motion>', gun.targetting)
-    canv.bind('<Key>', hull.move)
+    canv.bind('<Button-1>', tank.fire_start)
+    canv.bind('<ButtonRelease-1>', tank.fire_end)
+    canv.bind('<Motion>', tank.targetting)
+    root.bind('<Key>', tank.move)
   
     target.live = True
     while target.live or balls:
@@ -238,12 +281,12 @@ def new_game(event=''):
                 canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
         canv.update()
         time.sleep(delta_time)
-        gun.targetting()
-        gun.power_up()
+        tank.targetting()
+        tank.power_up()
+        tank.move()
     canv.delete(Target)
     canv.itemconfig(screen1, text='')
-    root.after(750, new_game)
-
+    root.after(100, new_game)
 
 new_game()
 
