@@ -1,4 +1,4 @@
-from random import randrange as rnd, choice
+from random import randrange as rnd, choice, randint
 import tkinter as tk
 import math
 import time
@@ -38,6 +38,11 @@ class Hull():
                 if self.x + speed <= 725:
                     self.x += speed
                     canv.move(self.id, speed, 0)
+    
+    def is_hitted(self, obj):
+        if math.sqrt((obj.x - self.x)**2 + (obj.y - self.y)**2) <= 65:
+            return True
+        return False
 
 
 class Gun():
@@ -62,8 +67,8 @@ class Gun():
         new_ball = Ball(self.x, self.y)
         new_ball.r = 15
         self.an = math.atan((event.y-new_ball.y) / (event.x-new_ball.x))
-        new_ball.vx = 20 * self.fire_power * math.cos(self.angle)
-        new_ball.vy = 20 * self.fire_power * math.sin(self.angle)
+        new_ball.vx = 30 * self.fire_power * math.cos(self.angle)
+        new_ball.vy = 30 * self.fire_power * math.sin(self.angle)
         balls += [new_ball]
         self.fire_on = False
         self.fire_power = 10
@@ -76,11 +81,11 @@ class Gun():
             if y > 550:
                 y = 549
             if x == self.x:
-                self.angle = math.pi / 2
+                self.angle = -math.pi / 2
             else:
                 if x < self.x:
                     self.angle = math.atan((y - self.y) / (x - self.x)) + math.pi
-                else:
+                elif x > self.x:
                     self.angle = math.atan((y - self.y) / (x - self.x))
 
         if self.fire_on:
@@ -116,12 +121,16 @@ class Tank():
     def __init__(self, x=200, speed=100):
         self.x = x
         self.speed = speed
+        self.live = True
         self.hull = Hull(x)
         self.gun = Gun(x)
 
     def move(self, event=0):
         self.hull.move(event, self.speed)
         self.gun.move(event, self.speed)
+
+    def is_hitted(self, obj):
+        return self.hull.is_hitted(obj)
 
     def targetting(self, event=0):
         self.gun.targetting(event)
@@ -137,7 +146,7 @@ class Tank():
 
 
 class Ball():
-    def __init__(self, x=40.0, y=450.0):
+    def __init__(self, x=40.0, y=450.0, r=10):
         """ Конструктор класса ball
         Args:
         x - начальное положение мяча по горизонтали
@@ -146,10 +155,10 @@ class Ball():
         self.angle = 0
         self.x = x
         self.y = y
-        self.r = 10
+        self.r = r
         self.vx = 10
         self.vy = 10
-        self.color = choice(['blue', 'green', 'red', 'brown'])
+        self.color = choice(['blue', 'yellow', 'purple', 'brown'])
         self.id = canv.create_oval(
                 self.x - self.r,
                 self.y - self.r,
@@ -221,12 +230,12 @@ class Ball():
 
 
 class Target():
-    def __init__(self):
-        self.points = 0
+    def __init__(self, Vmax=300):
         self.live = True
         self.id = canv.create_oval(0,0,0,0)
-        self.id_points = canv.create_text(30, 30, text = self.points, font = '28')
         self.new_target()
+        self.Vx = randint(-Vmax, Vmax)
+        self.Vy = randint(-Vmax, Vmax)
 
     def new_target(self):
         """ Инициализация новой цели. """
@@ -240,53 +249,85 @@ class Target():
     def hit(self, points=1):
         """Попадание шарика в цель."""
         canv.coords(self.id, -10, -10, -10, -10)
-        self.points += points
         self.live = False
-        canv.itemconfig(self.id_points, text=self.points)
 
     def move(self):
-        pass
+        if self.x - self.r < 0:
+            self.x = self.r
+            self.Vx = -self.Vx
+        if self.x + self.r > 800:
+            self.x = 800 - self.r 
+            self.Vx = -self.Vx
+        if self.y - self.r < 0:
+            self.y = self.r
+            self.Vy = -self.Vy
+        if self.y + self.r > 600:
+            self.y = 600 - self.r
+            self.Vy = -self.Vy
 
+        self.x += self.Vx * delta_time
+        self.y += self.Vy * delta_time
+        canv.move(self.id, self.Vx * delta_time, self.Vy * delta_time)
 
 tank = Tank(x=200, speed=100)
-target = Target()
 screen1 = canv.create_text(400, 300, text='', font='28')
+lvl_screen = canv.create_text(40, 20, text='', font='28')
+lvl = 1
 
 FPS = 100
 delta_time = 1 / FPS
 
 def new_game(event=''):
-    global gun, target, screen1, balls, bullet, hull
-    target.new_target()
-    bullet = 0    # number of wasted bullets
+    global screen1, balls, bullet, lvl, lvl_screen
+    canv.itemconfig(screen1, text='')
+    canv.itemconfig(lvl_screen, text= 'LEVEL ' + str(lvl))
+    bullet = 0    
     balls = []
+    targets = []
+    for i in range(2*lvl):
+        target = Target(Vmax = 300 + 40*lvl)
+        targets += [target]
+
     canv.bind('<Button-1>', tank.fire_start)
     canv.bind('<ButtonRelease-1>', tank.fire_end)
     canv.bind('<Motion>', tank.targetting)
     root.bind('<Key>', tank.move)
   
-    target.live = True
-    while target.live or balls:
+    while tank.live and (targets or balls):
+        for target in targets:
+            target.move()
+            if tank.is_hitted(target) and tank.live:
+                tank.live = False
         for ball in balls:
             ball.move(9.8, 0.8)
             ball.lifetimer -= delta_time
             if ball.lifetimer <= 0:
                 balls.remove(ball)
                 canv.delete(ball.id)
-            if ball.hit_test(target) and target.live:
-                target.live = False
-                target.hit()
-                canv.bind('<Button-1>', '')
-                canv.bind('<ButtonRelease-1>', '')
-                canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
+            for target in targets:
+                if ball.hit_test(target) and target.live:
+                    target.live = False
+                    target.hit()
+                    targets.remove(target)
+                    # canv.bind('<Button-1>', '')
+                    # canv.bind('<ButtonRelease-1>', '')
+                    # canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
         canv.update()
         time.sleep(delta_time)
         tank.targetting()
         tank.power_up()
         tank.move()
     canv.delete(Target)
-    canv.itemconfig(screen1, text='')
-    root.after(100, new_game)
+    lvl += 1
+    if tank.live:
+        root.after(100, new_game)
+    else:
+        for target in targets:
+            canv.delete(target.id)
+        canv.itemconfig(screen1, text='YOU LOSE')
+        lvl = 1
+        tank.live = True
+        root.after(3000, new_game)
 
 new_game()
 
