@@ -82,7 +82,7 @@ class Gun():
                 y = 549
             if x == self.x:
                 self.angle = -math.pi / 2
-            else:
+            elif x != self.x:
                 if x < self.x:
                     self.angle = math.atan((y - self.y) / (x - self.x)) + math.pi
                 elif x > self.x:
@@ -239,8 +239,8 @@ class Target():
 
     def new_target(self):
         """ Инициализация новой цели. """
-        x = self.x = rnd(600, 780)
-        y = self.y = rnd(300, 550)
+        x = self.x = rnd(25, 775)
+        y = self.y = rnd(25, 300)
         r = self.r = rnd(2, 50)
         color = self.color = 'red'
         canv.coords(self.id, x-r, y-r, x+r, y+r)
