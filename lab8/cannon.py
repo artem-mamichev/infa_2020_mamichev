@@ -166,7 +166,7 @@ class Ball():
                 self.y + self.r,
                 fill=self.color
         )
-        self.lifetimer = 2    # in seconds
+        self.lifetimer = 2 - lvl/5    # in seconds
 
     def set_coords(self):
         canv.coords(
@@ -309,9 +309,6 @@ def new_game(event=''):
                     target.live = False
                     target.hit()
                     targets.remove(target)
-                    # canv.bind('<Button-1>', '')
-                    # canv.bind('<ButtonRelease-1>', '')
-                    # canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
         canv.update()
         time.sleep(delta_time)
         tank.targetting()
@@ -327,6 +324,8 @@ def new_game(event=''):
         canv.itemconfig(screen1, text='YOU LOSE')
         lvl = 1
         tank.live = True
+        canv.bind('<Button-1>', '')
+        canv.bind('<ButtonRelease-1>', '')
         root.after(3000, new_game)
 
 new_game()
