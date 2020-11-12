@@ -17,7 +17,7 @@ class Hull():
         Args:
         x, y - координаты центра корпуса
         '''
-        self.width = 150
+        self.width = 130
         self.height = 50
         self.x = x
         self.y = 600 - self.height/2 
@@ -52,7 +52,7 @@ class Gun():
         self.angle = 1
         self.x = x
         self.y = y
-        self.id = canv.create_line(x, y, x + 30, y - 30, width=7)
+        self.id = canv.create_line(x, y, x + 40, y - 40, width=7)
 
     def fire_start(self, event):
         self.fire_on = True
@@ -67,8 +67,8 @@ class Gun():
         new_ball = Ball(self.x, self.y)
         new_ball.r = 15
         self.an = math.atan((event.y-new_ball.y) / (event.x-new_ball.x))
-        new_ball.vx = 30 * self.fire_power * math.cos(self.angle)
-        new_ball.vy = 30 * self.fire_power * math.sin(self.angle)
+        new_ball.vx = 32 * self.fire_power * math.cos(self.angle)
+        new_ball.vy = 32 * self.fire_power * math.sin(self.angle)
         balls += [new_ball]
         self.fire_on = False
         self.fire_power = 10
@@ -93,8 +93,8 @@ class Gun():
         else:
             canv.itemconfig(self.id, fill='black')
         canv.coords(self.id, self.x, self.y,
-                    self.x + max(self.fire_power, 20) * math.cos(self.angle),
-                    self.y + max(self.fire_power, 20) * math.sin(self.angle)
+                    self.x + max(self.fire_power, 40) * math.cos(self.angle),
+                    self.y + max(self.fire_power, 40) * math.sin(self.angle)
                     )
 
     def power_up(self):
@@ -117,17 +117,48 @@ class Gun():
                     canv.move(self.id, speed, 0)
 
 
+class Tower():
+    def __init__(self, x=200):
+        '''
+        Конструктор класса Hull
+        Args:
+        x, y - координаты центра корпуса
+        '''
+        self.r = 25
+        self.x = x
+        self.y = 555
+        self.color = 'green'
+        self.id = canv.create_oval(self.x - self.r, 
+                                   self.y - self.r, 
+                                   self.x + self.r, 
+                                   self.y + self.r, 
+                                   fill=self.color)
+
+    def move(self, event=0, speed=100):
+        if event:
+            if event.keysym == 'a':
+                if self.x - speed >= 75:
+                    canv.move(self.id, -speed, 0)
+                    self.x -= speed
+            if event.keysym == 'd':
+                if self.x + speed <= 725:
+                    self.x += speed
+                    canv.move(self.id, speed, 0)
+
+
 class Tank():
     def __init__(self, x=200, speed=100):
         self.x = x
         self.speed = speed
         self.live = True
-        self.hull = Hull(x)
         self.gun = Gun(x)
+        self.tower = Tower()
+        self.hull = Hull(x)
 
     def move(self, event=0):
         self.hull.move(event, self.speed)
         self.gun.move(event, self.speed)
+        self.tower.move(event, self.speed)
 
     def is_hitted(self, obj):
         return self.hull.is_hitted(obj)
@@ -315,12 +346,15 @@ def new_game(event=''):
         tank.power_up()
         tank.move()
     canv.delete(Target)
+    canv.delete(Ball)
     lvl += 1
     if tank.live:
         root.after(100, new_game)
     else:
         for target in targets:
             canv.delete(target.id)
+        for ball in balls:
+            canv.delete(ball.id)
         canv.itemconfig(screen1, text='YOU LOSE')
         lvl = 1
         tank.live = True
