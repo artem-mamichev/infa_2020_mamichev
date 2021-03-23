@@ -61,7 +61,10 @@ struct List
         }
         else{
             value = tail -> value;
+            Node * old_tail = tail;
             tail = tail -> prev;
+            delete old_tail;
+            tail -> next = NULL;
             size--;
         }
         return value;

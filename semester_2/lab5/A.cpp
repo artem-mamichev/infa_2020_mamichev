@@ -1,5 +1,6 @@
 #include <iostream>
-// #include <bits/stdc++.h>
+
+using namespace std;
 
 struct Node {
     int value;
@@ -51,15 +52,22 @@ struct List
         ++size;
     }
     
-    void pop()
+    int pop()
     {
+        int value;
         if (size == 1){
+            value = head -> value;
             clear();
         }
         else{
-        tail = tail -> prev;
-        size--;
+            value = tail -> value;
+            Node * old_tail = tail;
+            tail = tail -> prev;
+            delete old_tail;
+            tail -> next = NULL;
+            size--;
         }
+        return value;
     }
 
 };
@@ -70,24 +78,24 @@ int main()
     int a;
     List * list = new List;
 
-    std::cin >> a;
+    cin >> a;
     while (a != 0){
         if (a > 0)
             list -> push_back(a);
-        else {
-            if (-a < list->tail->value)
-                list -> tail -> value += a;
-            else if (list -> size > 0)
-                list -> pop();
+        else if (list -> size > 0){
+                if (-a < list -> tail -> value)
+                    list -> tail -> value += a;
+                else 
+                    list -> pop();
         }
-        std::cin >> a;
+        cin >> a;
     }
     
-    std::cout << list -> size << ' ';
+    cout << list -> size << ' ';
     if (list -> size == 0)
-        std:: cout << -1 << '\n';
+        cout << -1 << '\n';
     else
-        std:: cout << list -> tail -> value << '\n';
+        cout << list -> tail -> value << '\n';
     
     list->clear();
     delete list;
