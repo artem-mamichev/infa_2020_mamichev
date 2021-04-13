@@ -18,7 +18,7 @@ void bubble_sort(int* m, int n)
                 std::swap(m[i], m[i + 1]);
                 sorted = false;
                 count++;
-            }
+            }k
 
     }
 }
